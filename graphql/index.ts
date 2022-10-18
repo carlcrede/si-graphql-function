@@ -49,6 +49,8 @@ const typeDefs = gql`
         getProducts: [Product]
         getProductsBySearchTerm(term:String!): [Product]
         getProductsByPrice(maxPrice:Float, minPrice:Float, ascending: Boolean=True): [Product]
+        getProductImage(id: ID!): ProductImage
+
     }
 
 `;
@@ -57,13 +59,13 @@ const resolvers = {
     Query: {
         getProduct: (_, args) => db.prepare(
             `SELECT * 
-            FROM products
+            FROM products, product_images
             FULL OUTER JOIN product_images ON products.id=product_images.product_id
             WHERE id = ?`
         ).get(args.id),
         
         getProducts: () => db.prepare(
-            `SELECT * FROM products`
+            `SELECT * FROM products FULL OUTER JOIN product_images ON products.id=product_images.product_id;`
         ).all(),
         
         getProductsBySearchTerm: (_,args) => {
@@ -87,6 +89,9 @@ const resolvers = {
             ORDER BY price ${orderedby} `
         ).all()
     },
+    getProductImage: (_, args) => db.prepare(
+        `SELECT * FROM product_images WHERE product_id = ?`
+    ).get(args.id)
     }
 }
 
