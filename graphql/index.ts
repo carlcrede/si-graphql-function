@@ -7,7 +7,7 @@ const db_connect = async () => {
     const db_file = await fetch('https://keablob.blob.core.windows.net/products/products_final.db');
     const db_db = await db_file.arrayBuffer();
     const db_buff = Buffer.from(db_db);
-    const db = new Database(db_buff);
+    const db = new Database(db_buff, { verbose: console.log });
     console.log("here")
     const query = db.prepare(`SELECT * FROM products`).all(); 
     console.log(query)
@@ -57,15 +57,22 @@ const typeDefs = gql`
 
 const resolvers = {
     Query: {
-        getProduct: (_, args) => db.prepare(
-            `SELECT * 
-            FROM products, product_images
-            FULL OUTER JOIN product_images ON products.id=product_images.product_id
-            WHERE id = ?`
-        ).get(args.id),
+        getProduct: (_, args) => {
+            const product = db.prepare(
+            `SELECT * FROM products WHERE products.id = ?`
+        ).get(args.id);
+        const product_image = db.prepare(
+            `SELECT * FROM product_images WHERE product_id = ?`
+        ).get(args.id);
+
+        product.product_image = product_image
+        console.log(product)
+        console.log(product_image)
+        return product
+    },
         
         getProducts: () => db.prepare(
-            `SELECT * FROM products FULL OUTER JOIN product_images ON products.id=product_images.product_id;`
+            `SELECT * FROM products JOIN product_images ON products.id=product_images.product_id;`
         ).all(),
         
         getProductsBySearchTerm: (_,args) => {
@@ -89,10 +96,15 @@ const resolvers = {
             ORDER BY price ${orderedby} `
         ).all()
     },
-    getProductImage: (_, args) => db.prepare(
-        `SELECT * FROM product_images WHERE product_id = ?`
-    ).get(args.id)
-    }
+    // getProductImage: (_, args) => db.prepare(
+    //     `SELECT * FROM product_images WHERE product_id = ?`
+    // ).get(args.id)
+    // },
+    // Product: {
+    //     product_image: (_, args) => db.prepare(
+    //         `SELECT * FROM product_images WHERE product_id = ?`
+    //     ).get(args.id)
+    // }
 }
 
 const server = new ApolloServer({
