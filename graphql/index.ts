@@ -45,10 +45,10 @@ const typeDefs = gql`
     }
 
     type Query {
-        getProduct(id: ID!): Product
-        getProductImage(id: ID!): ProductImage
-        getProductAdditionalInfo(id: ID!): ProductAdditionalInfo
+        product(id: ID!): Product
         products: [Product]
+        productImage(id: ID!): ProductImage
+        productAdditionalInfo(id: ID!): ProductAdditionalInfo
         getProductsBySearchTerm(term:String!): [Product]
         getProductsByPrice(maxPrice:Float, minPrice:Float, ascending: Boolean=True): [Product]
     }
@@ -58,39 +58,22 @@ const typeDefs = gql`
 
 const resolvers = {
     Query: {
-        getProduct: (_, args) => {
-            const product = db.prepare(
+        product: (_, args) => db.prepare(
             `SELECT * FROM products WHERE products.id = ?`
-        ).get(args.id);
-        // const product_image = db.prepare(
-        //     `SELECT * FROM product_images WHERE product_id = ?`
-        // ).get(args.id);
-        // const additional_info = db.prepare(
-        //     `SELECT * FROM product_additional_info WHERE product_id = ?`
-        // ).get(args.id);
+        ).get(args.id),
 
-        // product.product_image = product_image
-        // product.product_info = additional_info
-        return product
-    },
-
-        getProductImage: (_, args) => {
-            const productImage = db.prepare(
-            `SELECT * FROM product_images WHERE product_id = ?`
-        ).get(args.id);
-        return productImage
-    },
-
-        getProductAdditionalInfo: (_, args) => {
-            const ProductAdditionalInfo = db.prepare(
-            `SELECT * FROM product_additional_info WHERE product_id = ?`
-        ).get(args.id);
-        return ProductAdditionalInfo
-    },
-        
-        products: () => db.prepare(
-            `SELECT * FROM products;`
+        products: (_,) => db.prepare(
+            `SELECT * FROM products`
         ).all(),
+
+        productImage: (_, args) => db.prepare(
+            `SELECT * FROM product_images WHERE product_id = ?`
+        ).get(args.id),
+
+        productAdditionalInfo: (_, args) => db.prepare(
+            `SELECT * FROM product_additional_info WHERE product_id = ?`
+        ).get(args.id),
+        
         
         getProductsBySearchTerm: (_,args) => {
             // const db = new Database('foobar.db', { verbose: console.log });  
@@ -115,15 +98,15 @@ const resolvers = {
     },
     },
     Product: {
-        product_image: () => {
+        product_image: (product) => {
             return db.prepare(
-                `SELECT * FROM product_images WHERE product_id = 1`
-            ).get();
+                `SELECT * FROM product_images WHERE product_id = ?`
+            ).get(product.id);
         },
-        product_info: () => {
+        product_info: (product) => {
             return db.prepare(
-                `SELECT * FROM product_additional_info WHERE product_id = 1`
-            ).get();
+                `SELECT * FROM product_additional_info WHERE product_id = ?`
+            ).get(product.id);
         }
     }
 }
